@@ -6,7 +6,7 @@ export default function Home() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Ajedrez</h1>
         <p className="text-sm text-muted-foreground">
-          Fase 2 — cronómetro oficial y Fischer960.
+          Tablero, reloj oficial, Fischer960 y jugadas dictadas por voz.
         </p>
       </header>
 
