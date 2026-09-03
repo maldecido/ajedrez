@@ -84,6 +84,21 @@ function say(game: ChessGame, transcript: string): string {
   check('"enroque corto" -> O-O', say(g, "enroque corto") === "O-O");
   check('"enroque largo" -> O-O-O', say(g, "enroque largo") === "O-O-O");
   check('"enroco" sin decir flanco asume corto', say(g, "enroco") === "O-O");
+  check(
+    '"enroque de dama" -> O-O-O',
+    say(g, "enroque de dama") === "O-O-O",
+    `-> ${say(g, "enroque de dama")}`,
+  );
+  check(
+    '"enroque de reina" -> O-O-O',
+    say(g, "enroque de reina") === "O-O-O",
+    `-> ${say(g, "enroque de reina")}`,
+  );
+  check(
+    '"enroque de rey" sigue siendo corto',
+    say(g, "enroque de rey") === "O-O",
+    `-> ${say(g, "enroque de rey")}`,
+  );
 }
 
 // --- Enroque en Fischer960 -------------------------------------------------

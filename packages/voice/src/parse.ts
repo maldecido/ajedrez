@@ -49,8 +49,11 @@ export function parseTranscript(transcript: string): VoiceCommand {
 
   // --- enroque ------------------------------------------------------------
   if (/\benroque\b|\benroco\b|\benrocar\b/.test(text)) {
-    // "largo" es el de dama; si no se dice nada, se asume corto.
-    const side = /\blargo\b|\bdama\b|\breina\b/.test(text) ? "q" : "k";
+    // "enroque de dama" es el largo. Ojo: para entonces "dama" ya se
+    // normalizo a token de pieza, asi que hay que buscarlo como tal y no
+    // como palabra, que era lo que fallaba.
+    const side =
+      /\blargo\b/.test(text) || text.includes(`${PIECE_TOKEN_PREFIX}q`) ? "q" : "k";
     return { kind: "castle", side };
   }
 
