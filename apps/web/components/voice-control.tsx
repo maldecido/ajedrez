@@ -104,8 +104,16 @@ export function VoiceControl() {
     try {
       setFeedback({ kind: "listening" });
       recognition.start();
-    } catch {
-      // start() lanza si ya estaba escuchando; no es un error que mostrar.
+    } catch (error) {
+      // start() lanza InvalidStateError si ya estaba escuchando, y eso no es
+      // un problema. Cualquier otro fallo si hay que enseñarlo: antes se
+      // tragaban todos y el boton parecia muerto.
+      if ((error as DOMException)?.name !== "InvalidStateError") {
+        setFeedback({
+          kind: "error",
+          message: "No se pudo abrir el micrófono. Revisa el permiso del navegador.",
+        });
+      }
     }
   }, []);
 
@@ -134,13 +142,22 @@ export function VoiceControl() {
   return (
     <div className="flex flex-col gap-2">
       <Button
-        variant={feedback.kind === "listening" ? "default" : "outline"}
+        variant={feedback.kind === "listening" ? "destructive" : "default"}
         size="sm"
         onClick={startListening}
         disabled={feedback.kind === "listening"}
       >
-        {feedback.kind === "listening" ? "Escuchando…" : "Dictar jugada"}
+        {feedback.kind === "listening" ? "● Escuchando, habla ahora…" : "🎤 Dictar jugada"}
       </Button>
+
+      {feedback.kind === "idle" && (
+        <p className="text-xs text-muted-foreground">
+          Di por ejemplo: <span className="font-medium">“caballo a efe tres”</span>,{" "}
+          <span className="font-medium">“e cuatro”</span> o{" "}
+          <span className="font-medium">“enroque corto”</span>. La primera vez el
+          navegador pedirá permiso para el micrófono.
+        </p>
+      )}
 
       {feedback.kind === "error" && (
         <p className="text-xs text-destructive">{feedback.message}</p>
@@ -176,7 +193,7 @@ function ResolutionPanel({
   onDismiss,
 }: ResolutionPanelProps) {
   return (
-    <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3">
+    <div className="flex flex-col gap-2 rounded-md border-2 border-primary bg-accent p-3">
       <p className="text-xs text-muted-foreground">
         Se escuchó: <span className="italic">“{transcript}”</span>
       </p>
