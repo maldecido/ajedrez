@@ -1,13 +1,8 @@
 "use client";
 
-import type { GameEndReason, GameResult } from "@ajedrez/chess-engine";
+import type { GameEndReason } from "@ajedrez/chess-engine";
 
 import { useGameStore } from "@/store/game-store";
-
-const WINNER_TEXT: Record<Exclude<GameResult, "draw">, string> = {
-  white: "Ganan las blancas",
-  black: "Ganan las negras",
-};
 
 const REASON_TEXT: Record<GameEndReason, string> = {
   checkmate: "Jaque mate",
@@ -25,16 +20,24 @@ export function GameStatus() {
   const outcome = useGameStore((state) => state.outcome);
 
   if (outcome) {
-    const reason = REASON_TEXT[outcome.reason];
-    const text =
+    const headline =
       outcome.result === "draw"
-        ? reason
-        : `${reason}. ${WINNER_TEXT[outcome.result]}`;
+        ? "Tablas"
+        : outcome.result === "white"
+          ? "Ganan las blancas"
+          : "Ganan las negras";
 
     return (
-      <p className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
-        {text}
-      </p>
+      <div
+        role="status"
+        className="rounded-md border-2 border-primary bg-primary px-3 py-3 text-primary-foreground"
+      >
+        <p className="text-xs uppercase tracking-wide opacity-80">
+          Partida terminada
+        </p>
+        <p className="text-lg font-bold leading-tight">{headline}</p>
+        <p className="text-sm opacity-90">{REASON_TEXT[outcome.reason]}</p>
+      </div>
     );
   }
 
