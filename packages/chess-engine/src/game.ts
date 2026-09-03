@@ -17,6 +17,7 @@ import {
 import type {
   Color,
   EngineEndReason,
+  PieceSymbol,
   GameMove,
   GameResult,
   GameStatus,
@@ -30,6 +31,17 @@ export const DEFAULT_FEN =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 const CASTLING_SIDES: readonly CastlingSide[] = ["k", "q"];
+
+/** Una jugada legal de la posicion actual. */
+export interface LegalMove {
+  from: Square;
+  to: Square;
+  san: string;
+  piece: PieceSymbol;
+  promotion?: PromotionPiece;
+  isCastling: boolean;
+  castlingSide?: CastlingSide;
+}
 
 export interface ChessGameOptions {
   /** Activa el enroque de Fischer960, que chess.js no implementa. */
@@ -127,6 +139,45 @@ export class ChessGame {
     }
 
     return Array.from(targets);
+  }
+
+  /**
+   * Todas las jugadas legales de la posicion, con su SAN.
+   *
+   * La usa el parser de voz para resolver lo dictado contra lo que de verdad
+   * se puede jugar. Incluye el enroque de Fischer960, que chess.js no genera.
+   */
+  legalMoves(): LegalMove[] {
+    const moves: LegalMove[] = this.chess.moves({ verbose: true }).map((move) => ({
+      from: move.from,
+      to: move.to,
+      san: move.san,
+      piece: move.piece,
+      promotion: move.promotion as PromotionPiece | undefined,
+      isCastling: move.isKingsideCastle() || move.isQueensideCastle(),
+      castlingSide: move.isKingsideCastle()
+        ? ("k" as CastlingSide)
+        : move.isQueensideCastle()
+          ? ("q" as CastlingSide)
+          : undefined,
+    }));
+
+    if (this.chess960 && this.layout) {
+      const color = this.chess.turn();
+      const from = castlingKingSquare(color, this.layout);
+      for (const side of this.availableCastlingSides()) {
+        moves.push({
+          from,
+          to: castlingRookSquare(color, side, this.layout),
+          san: castlingSan(side),
+          piece: "k",
+          isCastling: true,
+          castlingSide: side,
+        });
+      }
+    }
+
+    return moves;
   }
 
   /** Indica si mover de `from` a `to` obligaria a coronar. */

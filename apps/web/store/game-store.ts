@@ -9,6 +9,7 @@ import {
   type GameMove,
   type GameResult,
   type GameStatus,
+  type LegalMove,
   type PromotionPiece,
   type Square,
 } from "@ajedrez/chess-engine";
@@ -72,6 +73,8 @@ interface GameState extends GameSetup {
   pgn: string;
   history: GameMove[];
   status: GameStatus;
+  /** Jugadas legales de la posicion. Las usa el parser de voz. */
+  legalMoves: LegalMove[];
   outcome: GameOutcome | null;
   selectedSquare: Square | null;
   legalTargets: Square[];
@@ -122,6 +125,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   pgn: "",
   history: [],
   status: engine.status(),
+  legalMoves: engine.legalMoves(),
   outcome: null,
   selectedSquare: null,
   legalTargets: [],
@@ -152,6 +156,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       pgn: engine.pgn(),
       history: [],
       status: engine.status(),
+      legalMoves: engine.legalMoves(),
       outcome: null,
       selectedSquare: null,
       legalTargets: [],
@@ -312,6 +317,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       pgn: engine.pgn(),
       history: engine.history(),
       status,
+      legalMoves: engine.legalMoves(),
       outcome: null,
       selectedSquare: null,
       legalTargets: [],
@@ -352,6 +358,7 @@ function applyMove(
     pgn: engine.pgn(),
     history: engine.history(),
     status,
+    legalMoves: engine.legalMoves(),
     outcome,
     selectedSquare: null,
     legalTargets: [],

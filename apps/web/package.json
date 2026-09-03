@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ajedrez/chess-engine": "^0.1.0",
+    "@ajedrez/voice": "^0.1.0",
     "@radix-ui/react-slot": "^1.3.3",
     "@supabase/supabase-js": "^2.109.0",
     "chess.js": "^1.4.0",

@@ -8,6 +8,7 @@ import { GameControls } from "@/components/game-controls";
 import { GameSetup } from "@/components/game-setup";
 import { GameStatus } from "@/components/game-status";
 import { MoveHistory } from "@/components/move-history";
+import { VoiceControl } from "@/components/voice-control";
 import { Card, CardContent } from "@/components/ui/card";
 import { useGameStore } from "@/store/game-store";
 
@@ -44,6 +45,7 @@ export function GameScreen() {
           <CardContent className="flex flex-col gap-4 pt-6">
             <ClockPanel />
             <GameStatus />
+            <VoiceControl />
             <GameControls />
             <MoveHistory />
             <EndGameControls />

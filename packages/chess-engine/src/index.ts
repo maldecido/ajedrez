@@ -1,4 +1,6 @@
 export { ChessGame, DEFAULT_FEN } from "./game";
+export type { ChessGameOptions, LegalMove } from "./game";
+export type { CastlingSide } from "./castling960";
 export {
   FISCHER960_COUNT,
   STANDARD_SCHARNAGL_NUMBER,

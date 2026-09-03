@@ -7,7 +7,7 @@ apps/web/               Next.js 14 (App Router) + TypeScript + Tailwind + shadcn
   components/           tablero, estado, controles, historial
   store/                estado de partida (Zustand)
 packages/chess-engine/  wrapper sobre chess.js (reglas, PGN, fin de partida)
-packages/voice/         capa de voz (vacio hasta fase 4)
+packages/voice/         parser de voz español → SAN
 supabase/migrations/    esquema SQL versionado
 supabase/seed/          datos de ejemplo para desarrollo
 .github/workflows/      CI (lint + build)
@@ -29,12 +29,30 @@ Otros scripts desde la raíz: `npm run lint`, `npm run build`.
 
 ## Estado
 
-**Fase 3 completada**: sobre lo anterior (tablero, reglas, PGN, cronómetro y
-Fischer960 con enroque), ahora hay oponentes registrados, resultado con motivo
-—incluidos abandono y tablas acordadas— e historial persistido en Supabase.
+**Fase 4 completada**: sobre lo anterior (tablero, reglas, PGN, cronómetro,
+Fischer960 con enroque, oponentes e historial en Supabase), ahora se puede
+dictar la jugada por voz en español.
 
-Pendiente: comandos de voz (fase 4), partidas históricas (fase 5), tiempo real
-y autenticación con cuenta (fase 6).
+Pendiente: partidas históricas (fase 5), tiempo real y autenticación con
+cuenta (fase 6).
+
+### Voz
+
+`packages/voice` traduce lo dictado a notación algebraica. Va en dos pasos
+separados a propósito:
+
+1. **Parser** — interpreta la intención ("caballo a efe tres" → destino f3,
+   pieza caballo). Normaliza acentos, números dictados y nombres de columnas,
+   con las confusiones típicas del reconocedor ("ache" por *hache*).
+2. **Resolutor** — contrasta esa intención con las jugadas legales de la
+   posición. **Nunca inventa**: si encaja con varias, pregunta; si no encaja
+   con ninguna, lo dice.
+
+Ninguna jugada se aplica sola: siempre hay confirmación, porque un error de
+dictado no debe mover una pieza que no querías.
+
+Requiere Chrome o Edge (la Web Speech API no está en Firefox ni Safari). Donde
+no está, se avisa y se juega con el tablero.
 
 ### Identidad: sesión anónima
 
@@ -70,6 +88,7 @@ Cubren motor, generador 960 y cronómetro. No añaden dependencias al repo:
 npx tsx packages/chess-engine/smoke-test.ts           # reglas y finales
 npx tsx packages/chess-engine/smoke-test-960.ts       # las 960 posiciones
 npx tsx packages/chess-engine/smoke-test-castling.ts  # enroque de la variante
+npx tsx packages/voice/smoke-test.ts                  # dictado en español
 npx tsx apps/web/lib/clock.smoke-test.ts              # reloj e incremento
 ```
 
