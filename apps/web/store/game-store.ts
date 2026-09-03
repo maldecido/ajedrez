@@ -4,7 +4,6 @@ import {
   ChessGame,
   DEFAULT_FEN,
   fischer960Fen,
-  withoutCastlingRights,
   type Color,
   type GameEndReason,
   type GameMove,
@@ -82,6 +81,8 @@ interface GameState extends GameSetup {
   tryMove: (from: Square, to: Square, promotion?: PromotionPiece) => boolean;
   confirmPromotion: (piece: PromotionPiece) => void;
   cancelPromotion: () => void;
+  /** Arranca o pausa el reloj. El arranque es siempre manual. */
+  toggleClock: () => void;
   /** Cierra la partida porque a `color` se le acabo el tiempo. */
   flagTimeout: (color: Color) => void;
   undo: () => void;
@@ -114,27 +115,20 @@ export const useGameStore = create<GameState>((set, get) => ({
   clockHistory: [],
 
   startGame: ({ mode, scharnaglNumber, timeControl }) => {
-    const startFen =
-      mode === "fischer960" && scharnaglNumber !== null
-        ? // chess.js no implementa el enroque de la variante, asi que se
-          // retiran los derechos en lugar de anunciarlos y no cumplirlos.
-          withoutCastlingRights(fischer960Fen(scharnaglNumber))
-        : DEFAULT_FEN;
+    const isFischer = mode === "fischer960" && scharnaglNumber !== null;
+    const startFen = isFischer ? fischer960Fen(scharnaglNumber) : DEFAULT_FEN;
 
-    engine.load(startFen);
+    engine.load(startFen, { chess960: isFischer });
 
+    // El reloj se crea parado: lo arrancan los jugadores cuando estan listos.
     const clock = timeControl
-      ? startClock(
-          createClock(timeControl.initialSeconds, timeControl.incrementSeconds),
-          "w",
-          Date.now(),
-        )
+      ? createClock(timeControl.initialSeconds, timeControl.incrementSeconds)
       : null;
 
     set({
       phase: "playing",
       mode,
-      scharnaglNumber: mode === "fischer960" ? scharnaglNumber : null,
+      scharnaglNumber: isFischer ? scharnaglNumber : null,
       timeControl,
       fen: engine.fen(),
       pgn: engine.pgn(),
@@ -212,6 +206,21 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   cancelPromotion: () => set({ pendingPromotion: null }),
 
+  toggleClock: () => {
+    const { clock, phase } = get();
+    if (!clock || phase !== "playing") return;
+
+    const now = Date.now();
+    set({
+      clock:
+        clock.running === null
+          ? // Al reanudar corre el reloj de quien tiene el turno, no el de
+            // quien lo paro.
+            startClock(clock, engine.turn(), now)
+          : stopClock(clock, now),
+    });
+  },
+
   flagTimeout: (color) => {
     const { phase, clock } = get();
     if (phase !== "playing" || !clock) return;
@@ -232,14 +241,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (history.length === 0) return;
     if (!engine.undo()) return;
 
-    // El reloj vuelve a como estaba antes de la jugada deshecha.
+    // El reloj vuelve a como estaba antes de la jugada deshecha, conservando
+    // si estaba en marcha o en pausa.
     let restored: ClockState | null = null;
     if (clock && timeControl) {
       const previous = clockHistory[clockHistory.length - 2];
       const base =
         previous ??
         createClock(timeControl.initialSeconds, timeControl.incrementSeconds);
-      restored = startClock(base, engine.turn(), Date.now());
+      const paused = { ...base, running: null, anchor: null };
+      restored =
+        clock.running !== null
+          ? startClock(paused, engine.turn(), Date.now())
+          : paused;
     }
 
     const status = engine.status();
@@ -279,7 +293,7 @@ function applyMove(
   let nextClock = clock;
   if (clock) {
     const now = Date.now();
-    // Al terminar la partida el reloj se para; si sigue, pasa al rival.
+    // Si el reloj aun no se ha arrancado, switchClock lo deja como esta.
     nextClock = outcome ? stopClock(clock, now) : switchClock(clock, now);
   }
 

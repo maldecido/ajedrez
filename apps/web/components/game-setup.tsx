@@ -105,9 +105,9 @@ export function GameSetup() {
               )}
 
               <p className="text-xs text-muted-foreground">
-                El enroque todavía no está disponible en Fischer960: chess.js no
-                implementa el enroque de la variante. El resto de reglas funciona
-                con normalidad.
+                Para enrocar, mueve el rey sobre tu propia torre. Es la
+                convención de la variante y evita ambigüedades: el rey y la
+                torre acaban en las casillas de siempre (g/f o c/d).
               </p>
             </div>
           )}
