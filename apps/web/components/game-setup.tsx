@@ -4,8 +4,10 @@ import { useState } from "react";
 
 import { FISCHER960_COUNT, STANDARD_SCHARNAGL_NUMBER } from "@ajedrez/chess-engine";
 
+import { OpponentPicker } from "@/components/opponent-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import type { Opponent } from "@/lib/supabase/repository";
 import {
   OFFICIAL_TIME_CONTROLS,
   customTimeControl,
@@ -27,6 +29,10 @@ export function GameSetup() {
   const [customIncrement, setCustomIncrement] = useState(5);
   const [useRandomPosition, setUseRandomPosition] = useState(true);
   const [scharnagl, setScharnagl] = useState(STANDARD_SCHARNAGL_NUMBER);
+  const [opponent, setOpponent] = useState<Opponent | null>(null);
+  const [colorChoice, setColorChoice] = useState<"white" | "black" | "random">(
+    "white",
+  );
 
   function resolveTimeControl(): TimeControl | null {
     if (timeChoice === NO_CLOCK) return null;
@@ -39,6 +45,15 @@ export function GameSetup() {
   }
 
   function handleStart() {
+    const ownerColor =
+      colorChoice === "random"
+        ? Math.random() < 0.5
+          ? "w"
+          : "b"
+        : colorChoice === "white"
+          ? "w"
+          : "b";
+
     startGame({
       mode,
       scharnaglNumber:
@@ -48,6 +63,11 @@ export function GameSetup() {
             : scharnagl
           : null,
       timeControl: resolveTimeControl(),
+      seats: {
+        ownerColor,
+        opponentId: opponent?.id ?? null,
+        opponentName: opponent?.name ?? "Invitado",
+      },
     });
   }
 
@@ -169,6 +189,32 @@ export function GameSetup() {
               </label>
             </div>
           )}
+        </section>
+
+        <OpponentPicker value={opponent} onChange={setOpponent} />
+
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold">Juegas con</h2>
+          <div className="grid grid-cols-3 gap-2">
+            <ChoiceButton
+              selected={colorChoice === "white"}
+              onClick={() => setColorChoice("white")}
+            >
+              Blancas
+            </ChoiceButton>
+            <ChoiceButton
+              selected={colorChoice === "black"}
+              onClick={() => setColorChoice("black")}
+            >
+              Negras
+            </ChoiceButton>
+            <ChoiceButton
+              selected={colorChoice === "random"}
+              onClick={() => setColorChoice("random")}
+            >
+              Al azar
+            </ChoiceButton>
+          </div>
         </section>
 
         <Button onClick={handleStart} className="w-full">

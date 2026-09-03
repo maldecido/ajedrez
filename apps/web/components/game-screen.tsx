@@ -2,6 +2,8 @@
 
 import { ChessBoard } from "@/components/chess-board";
 import { ClockPanel } from "@/components/clock-panel";
+import { EndGameControls } from "@/components/end-game-controls";
+import { GameHistory } from "@/components/game-history";
 import { GameControls } from "@/components/game-controls";
 import { GameSetup } from "@/components/game-setup";
 import { GameStatus } from "@/components/game-status";
@@ -16,7 +18,12 @@ export function GameScreen() {
   const timeControl = useGameStore((state) => state.timeControl);
 
   if (phase === "setup") {
-    return <GameSetup />;
+    return (
+      <div className="flex flex-col gap-6">
+        <GameSetup />
+        <GameHistory />
+      </div>
+    );
   }
 
   const modeLabel =
@@ -39,6 +46,7 @@ export function GameScreen() {
             <GameStatus />
             <GameControls />
             <MoveHistory />
+            <EndGameControls />
           </CardContent>
         </Card>
       </div>

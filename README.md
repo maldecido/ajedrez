@@ -29,12 +29,23 @@ Otros scripts desde la raíz: `npm run lint`, `npm run build`.
 
 ## Estado
 
-**Fase 2 completada**: tablero jugable con reglas completas vía chess.js,
-historial SAN + PGN, cronómetro con presets FIDE e incremento Fischer (de
-arranque manual), y Fischer960 completo, enroque incluido.
+**Fase 3 completada**: sobre lo anterior (tablero, reglas, PGN, cronómetro y
+Fischer960 con enroque), ahora hay oponentes registrados, resultado con motivo
+—incluidos abandono y tablas acordadas— e historial persistido en Supabase.
 
-Pendiente: Supabase e historial persistido (fase 3), comandos de voz (fase 4),
-partidas históricas (fase 5), tiempo real y autenticación (fase 6).
+Pendiente: comandos de voz (fase 4), partidas históricas (fase 5), tiempo real
+y autenticación con cuenta (fase 6).
+
+### Identidad: sesión anónima
+
+La RLS cuelga de `auth.uid()`, pero la autenticación con cuenta es de la fase 6.
+Mientras tanto se usa la **sesión anónima** de Supabase: un usuario real de
+`auth.users` creado sin pedir nada al jugador. En la fase 6 esa cuenta se
+vincula a una de verdad y el historial se conserva.
+
+**Hay que activarla** en Supabase → Authentication → Sign In / Providers →
+*Anonymous sign-ins*. Si está desactivada la app sigue funcionando: se juega en
+local y no se guarda nada, avisando en pantalla.
 
 ### Enroque en Fischer960
 
@@ -60,4 +71,11 @@ npx tsx packages/chess-engine/smoke-test.ts           # reglas y finales
 npx tsx packages/chess-engine/smoke-test-960.ts       # las 960 posiciones
 npx tsx packages/chess-engine/smoke-test-castling.ts  # enroque de la variante
 npx tsx apps/web/lib/clock.smoke-test.ts              # reloj e incremento
+```
+
+Contra el proyecto real de Supabase (esquema, RLS, restricciones y políticas;
+crea datos de prueba y los borra al terminar):
+
+```bash
+npx tsx scripts/supabase-e2e-check.ts
 ```

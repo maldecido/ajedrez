@@ -21,6 +21,14 @@ import {
   switchClock,
   type ClockState,
 } from "@/lib/clock";
+import {
+  appendMove,
+  createGame,
+  deleteMovesFrom,
+  finishGame,
+  type SeatAssignment,
+} from "@/lib/supabase/repository";
+import { ensureSession } from "@/lib/supabase/session";
 import type { TimeControl } from "@/lib/time-controls";
 
 /**
@@ -54,6 +62,8 @@ export interface GameSetup {
   scharnaglNumber: number | null;
   /** `null` significa partida sin reloj. */
   timeControl: TimeControl | null;
+  /** Quien ocupa cada color. */
+  seats: SeatAssignment;
 }
 
 interface GameState extends GameSetup {
@@ -74,6 +84,8 @@ interface GameState extends GameSetup {
    * fase 3, y permite devolver el tiempo al deshacer.
    */
   clockHistory: ClockState[];
+  /** Id de la partida en Supabase, o `null` si no se esta guardando. */
+  remoteGameId: string | null;
 
   startGame: (setup: GameSetup) => void;
   backToSetup: () => void;
@@ -85,6 +97,10 @@ interface GameState extends GameSetup {
   toggleClock: () => void;
   /** Cierra la partida porque a `color` se le acabo el tiempo. */
   flagTimeout: (color: Color) => void;
+  /** Cierra la partida porque `color` abandona. */
+  resign: (color: Color) => void;
+  /** Cierra la partida en tablas de mutuo acuerdo. */
+  agreeDraw: () => void;
   undo: () => void;
   flipBoard: () => void;
 }
@@ -113,8 +129,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   boardOrientation: "white",
   clock: null,
   clockHistory: [],
+  seats: { ownerColor: "w", opponentId: null, opponentName: "Invitado" },
+  remoteGameId: null,
 
-  startGame: ({ mode, scharnaglNumber, timeControl }) => {
+  startGame: ({ mode, scharnaglNumber, timeControl, seats }) => {
     const isFischer = mode === "fischer960" && scharnaglNumber !== null;
     const startFen = isFischer ? fischer960Fen(scharnaglNumber) : DEFAULT_FEN;
 
@@ -140,6 +158,27 @@ export const useGameStore = create<GameState>((set, get) => ({
       pendingPromotion: null,
       clock,
       clockHistory: [],
+      seats,
+      remoteGameId: null,
+    });
+
+    // La persistencia no bloquea el juego: si Supabase no responde, se sigue
+    // jugando en local y simplemente no se guarda.
+    void ensureSession().then((identity) => {
+      if (!identity) return;
+      return createGame({
+        ownerId: identity.profileId,
+        mode,
+        startFen,
+        scharnaglNumber: isFischer ? scharnaglNumber : null,
+        timeControl,
+        seats,
+      }).then((remoteGameId) => {
+        // Si mientras tanto se empezo otra partida, este id ya no vale.
+        if (remoteGameId && get().phase === "playing" && get().history.length === 0) {
+          set({ remoteGameId });
+        }
+      });
     });
   },
 
@@ -224,22 +263,32 @@ export const useGameStore = create<GameState>((set, get) => ({
   flagTimeout: (color) => {
     const { phase, clock } = get();
     if (phase !== "playing" || !clock) return;
+    // Pierde quien agota el tiempo.
+    finish(set, get, { result: color === "w" ? "black" : "white", reason: "timeout" });
+  },
 
-    set({
-      phase: "finished",
-      clock: stopClock(clock, Date.now()),
-      // Pierde quien agota el tiempo.
-      outcome: { result: color === "w" ? "black" : "white", reason: "timeout" },
-      selectedSquare: null,
-      legalTargets: [],
-      pendingPromotion: null,
+  resign: (color) => {
+    if (get().phase !== "playing") return;
+    finish(set, get, {
+      result: color === "w" ? "black" : "white",
+      reason: "resignation",
     });
   },
 
+  agreeDraw: () => {
+    if (get().phase !== "playing") return;
+    finish(set, get, { result: "draw", reason: "draw_agreement" });
+  },
+
   undo: () => {
-    const { clockHistory, history, clock, timeControl } = get();
+    const { clockHistory, history, clock, timeControl, remoteGameId } = get();
     if (history.length === 0) return;
+    const undonePly = history[history.length - 1].ply;
     if (!engine.undo()) return;
+
+    // Si la jugada se guardo, se retira: el historial persistido tiene que
+    // seguir coincidiendo con la partida.
+    if (remoteGameId) void deleteMovesFrom(remoteGameId, undonePly);
 
     // El reloj vuelve a como estaba antes de la jugada deshecha, conservando
     // si estaba en marcha o en pausa.
@@ -310,6 +359,43 @@ function applyMove(
     clock: nextClock,
     clockHistory: nextClock ? [...clockHistory, nextClock] : clockHistory,
   });
+
+  const { remoteGameId } = get();
+  if (remoteGameId) {
+    const played = engine.history().at(-1);
+    if (played) {
+      void appendMove(remoteGameId, played, {
+        whiteMs: nextClock ? nextClock.whiteMs : null,
+        blackMs: nextClock ? nextClock.blackMs : null,
+      });
+    }
+    if (outcome) void finishGame(remoteGameId, outcome.result, outcome.reason, engine.pgn());
+  }
+}
+
+/**
+ * Cierra la partida por un motivo que no sale de la posicion: tiempo,
+ * abandono o tablas acordadas.
+ */
+function finish(
+  set: (partial: Partial<GameState>) => void,
+  get: () => GameState,
+  outcome: GameOutcome,
+) {
+  const { clock, remoteGameId } = get();
+
+  set({
+    phase: "finished",
+    outcome,
+    clock: clock ? stopClock(clock, Date.now()) : null,
+    selectedSquare: null,
+    legalTargets: [],
+    pendingPromotion: null,
+  });
+
+  if (remoteGameId) {
+    void finishGame(remoteGameId, outcome.result, outcome.reason, engine.pgn());
+  }
 }
 
 /** Tiempo restante de `color` en el instante `now`, o `null` si no hay reloj. */
