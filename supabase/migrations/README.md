@@ -18,8 +18,23 @@ Aquí vivirán las tablas del modelo de datos de la arquitectura: perfiles de
 usuario, partidas y sus movimientos (SAN/FEN, turnos y tiempos del reloj), más
 las políticas de acceso asociadas.
 
-> Fase 0: vacío a propósito. El esquema se define en la fase que introduce
-> Supabase; el cliente de Supabase aún no está cableado en `apps/web`.
+## Migraciones actuales
+
+- `20260903000000_initial_schema.sql` — perfiles, oponentes, ritmos, las 960
+  posiciones, partidas, jugadas, partidas históricas y la vista
+  `player_stats`.
+- `20260903000100_rls_policies.sql` — RLS de todas las tablas.
+
+Dos diferencias deliberadas respecto al modelo de datos de la arquitectura,
+ambas comentadas en el propio SQL:
+
+1. **`games.owner_id`** — no estaba en el modelo original, pero sin ella no se
+   puede escribir una política RLS correcta: los jugadores de una partida
+   pueden ser oponentes sin cuenta, así que `white_player_id`/`black_player_id`
+   no bastan para saber de quién es la partida.
+2. **`result_reason` incluye `'fifty_move'`** — chess.js detecta las tablas por
+   la regla de las 50 jugadas y el enum original no lo contemplaba, así que
+   esas partidas no se habrían podido guardar.
 
 Uso habitual (requiere la CLI de Supabase):
 

@@ -1,24 +1,31 @@
 # supabase/seed
 
-Datos de ejemplo para desarrollo y pruebas locales. **Nunca** datos reales de
+Datos de ejemplo y catálogos para desarrollo. **Nunca** datos reales de
 producción ni claves.
 
-Contenido previsto (`seed.sql` y archivos auxiliares): usuarios de prueba,
-alguna partida de ejemplo con sus movimientos ya cargados, y posiciones FEN
-conocidas para probar la UI del tablero sin tener que jugarlas a mano.
+## Archivos
 
-Requisitos:
+- **`seed.sql`** — ritmos oficiales FIDE (`time_controls`) y el semillero de
+  partidas históricas. Idempotente vía `on conflict do update`.
+- **`fischer960_positions.sql`** — las 960 posiciones de la variante.
+  **Generado**, no se edita a mano: lo emite
+  `packages/chess-engine/src/fischer960.ts`, el mismo código que usa la app,
+  así que base y cliente no pueden discrepar.
 
-- El seed asume que las migraciones de [`../migrations`](../migrations) ya se
-  aplicaron; sigue el mismo modelo de datos (perfiles, partidas, movimientos).
-- Debe ser **idempotente** (`on conflict do nothing` o `truncate` previo) para
-  poder relanzarlo sin ensuciar la base.
+## Uso
 
-> Fase 0: vacío a propósito. Se rellena junto con el esquema, en la fase que
-> introduce Supabase.
-
-Uso habitual:
+Requiere que las migraciones de [`../migrations`](../migrations) ya estén
+aplicadas.
 
 ```bash
-supabase db reset   # aplica migraciones + seed en la base local
+psql "$DATABASE_URL" -f supabase/seed/seed.sql
+psql "$DATABASE_URL" -f supabase/seed/fischer960_positions.sql
 ```
+
+Con la CLI de Supabase en local, `supabase db reset` aplica migraciones y seed
+de una vez.
+
+## Ojo con los ritmos
+
+`time_controls` duplica lo que hay en `apps/web/lib/time-controls.ts`. Si
+cambias un preset, cámbialo en los dos sitios.
