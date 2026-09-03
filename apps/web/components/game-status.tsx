@@ -1,31 +1,35 @@
 "use client";
 
-import type { EngineEndReason, GameResult } from "@ajedrez/chess-engine";
+import type { GameEndReason, GameResult } from "@ajedrez/chess-engine";
 
 import { useGameStore } from "@/store/game-store";
-
-const DRAW_REASON_TEXT: Record<Exclude<EngineEndReason, "checkmate">, string> = {
-  stalemate: "Tablas por rey ahogado",
-  insufficient_material: "Tablas por material insuficiente",
-  repetition: "Tablas por repeticion de posicion",
-  fifty_move: "Tablas por la regla de las 50 jugadas",
-};
 
 const WINNER_TEXT: Record<Exclude<GameResult, "draw">, string> = {
   white: "Ganan las blancas",
   black: "Ganan las negras",
 };
 
+const REASON_TEXT: Record<GameEndReason, string> = {
+  checkmate: "Jaque mate",
+  timeout: "Tiempo agotado",
+  resignation: "Abandono",
+  draw_agreement: "Tablas de mutuo acuerdo",
+  stalemate: "Tablas por rey ahogado",
+  insufficient_material: "Tablas por material insuficiente",
+  repetition: "Tablas por repetición de posición",
+  fifty_move: "Tablas por la regla de las 50 jugadas",
+};
+
 export function GameStatus() {
   const status = useGameStore((state) => state.status);
+  const outcome = useGameStore((state) => state.outcome);
 
-  if (status.isGameOver) {
+  if (outcome) {
+    const reason = REASON_TEXT[outcome.reason];
     const text =
-      status.reason === "checkmate"
-        ? `Jaque mate. ${WINNER_TEXT[status.result as Exclude<GameResult, "draw">]}`
-        : status.reason
-          ? DRAW_REASON_TEXT[status.reason]
-          : "Partida terminada";
+      outcome.result === "draw"
+        ? reason
+        : `${reason}. ${WINNER_TEXT[outcome.result]}`;
 
     return (
       <p className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">

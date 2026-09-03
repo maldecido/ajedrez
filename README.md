@@ -29,19 +29,26 @@ Otros scripts desde la raíz: `npm run lint`, `npm run build`.
 
 ## Estado
 
-**Fase 1 completada**: tablero jugable con clics y arrastre, reglas completas
-vía chess.js (enroque, al paso, coronación, mate, ahogado, material
-insuficiente, repetición, 50 jugadas), historial en SAN y PGN.
+**Fase 2 completada**: tablero jugable con reglas completas vía chess.js,
+historial SAN + PGN, cronómetro con presets FIDE e incremento Fischer, y
+generador de posiciones Fischer960.
 
-Pendiente: cronómetro y Fischer960 (fase 2), Supabase e historial persistido
-(fase 3), comandos de voz (fase 4), partidas históricas (fase 5), tiempo real
-y autenticación (fase 6).
+Pendiente: Supabase e historial persistido (fase 3), comandos de voz (fase 4),
+partidas históricas (fase 5), tiempo real y autenticación (fase 6).
 
-### Pruebas del motor
+### Limitación conocida: enroque en Fischer960
 
-`packages/chess-engine/smoke-test.ts` cubre reglas y finales de partida. Se
-ejecuta sin añadir dependencias al repo:
+chess.js 1.4.0 no implementa el enroque de la variante. Carga las posiciones
+960 sin error, pero no genera ningún enroque para ellas. Por eso el FEN de
+partida se pasa por `withoutCastlingRights()`: es preferible no anunciar un
+derecho que no se puede ejercer. El resto de reglas funciona con normalidad.
+
+### Pruebas
+
+Cubren motor, generador 960 y cronómetro. No añaden dependencias al repo:
 
 ```bash
-npx tsx packages/chess-engine/smoke-test.ts
+npx tsx packages/chess-engine/smoke-test.ts       # reglas y finales
+npx tsx packages/chess-engine/smoke-test-960.ts   # las 960 posiciones
+npx tsx apps/web/lib/clock.smoke-test.ts          # reloj e incremento
 ```

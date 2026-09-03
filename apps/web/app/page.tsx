@@ -1,8 +1,4 @@
-import { ChessBoard } from "@/components/chess-board";
-import { GameControls } from "@/components/game-controls";
-import { GameStatus } from "@/components/game-status";
-import { MoveHistory } from "@/components/move-history";
-import { Card, CardContent } from "@/components/ui/card";
+import { GameScreen } from "@/components/game-screen";
 
 export default function Home() {
   return (
@@ -10,23 +6,11 @@ export default function Home() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Ajedrez</h1>
         <p className="text-sm text-muted-foreground">
-          Fase 1 — tablero jugable con reglas completas y PGN.
+          Fase 2 — cronómetro oficial y Fischer960.
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex flex-col items-center gap-4">
-          <ChessBoard />
-        </div>
-
-        <Card>
-          <CardContent className="flex flex-col gap-4 pt-6">
-            <GameStatus />
-            <GameControls />
-            <MoveHistory />
-          </CardContent>
-        </Card>
-      </div>
+      <GameScreen />
     </main>
   );
 }

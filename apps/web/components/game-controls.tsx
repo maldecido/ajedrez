@@ -5,7 +5,7 @@ import { useGameStore } from "@/store/game-store";
 
 export function GameControls() {
   const undo = useGameStore((state) => state.undo);
-  const reset = useGameStore((state) => state.reset);
+  const backToSetup = useGameStore((state) => state.backToSetup);
   const flipBoard = useGameStore((state) => state.flipBoard);
   const hasMoves = useGameStore((state) => state.history.length > 0);
 
@@ -17,7 +17,7 @@ export function GameControls() {
       <Button variant="outline" size="sm" onClick={flipBoard}>
         Girar tablero
       </Button>
-      <Button variant="outline" size="sm" onClick={reset} disabled={!hasMoves}>
+      <Button variant="outline" size="sm" onClick={backToSetup}>
         Nueva partida
       </Button>
     </div>
